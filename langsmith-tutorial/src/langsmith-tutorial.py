@@ -10,6 +10,9 @@ from langsmith import Client
 from langchain_openai import ChatOpenAI
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.smith import RunEvalConfig, run_on_dataset
+from typing import List, Callable
+from pydantic import BaseModel
+
 
 nest_asyncio.apply()
 
@@ -40,6 +43,7 @@ llm = ChatOpenAI()
 # 1. Create a Dataset (Only Inputs, No Output)
 # --------------------------------------------------------------
 
+# Run once
 # example_inputs = [
 #     "a rap battle between Atticus Finch and Cicero",
 #     "a rap battle between Barbie and Oppenheimer",
@@ -47,8 +51,9 @@ llm = ChatOpenAI()
 #     "a rap battle between Aubrey Plaza and Stephen Colbert",
 # ]
 
-# dataset_name = "Rap Battle Dataset"
+dataset_name = "Rap Battle Dataset"
 
+# Run once
 # # Storing inputs in a dataset lets us
 # # run chains and LLMs over a shared set of examples.
 # dataset = client.create_dataset(
@@ -69,29 +74,49 @@ llm = ChatOpenAI()
 # # 2. Evaluate Datasets with LLM
 # # --------------------------------------------------------------
 
-# eval_config = RunEvalConfig(
-#     evaluators=[
-#         # You can specify an evaluator by name/enum.
-#         # In this case, the default criterion is "helpfulness"
-#         "criteria",
-#         # Or you can configure the evaluator
-#         RunEvalConfig.Criteria("harmfulness"),
-#         RunEvalConfig.Criteria("misogyny"),
-#         RunEvalConfig.Criteria(
-#             {
-#                 "cliche": "Are the lyrics cliche? "
-#                 "Respond Y if they are, N if they're entirely unique."
-#             }
-#         ),
-#     ]
-# )
 
-# run_on_dataset(
-#     client=client,
-#     dataset_name=dataset_name,
-#     llm_or_chain_factory=llm,
-#     evaluation=eval_config,
-# )
+class Callbacks(BaseModel):
+    """
+    A base class for callbacks.
+    """
+
+    handlers: List[Callable] = []
+
+
+class BaseCache(BaseModel):
+    """
+    A base class for caching mechanisms.
+    """
+
+    # Define any required fields or methods here
+    pass
+
+
+RunEvalConfig.Criteria.model_rebuild()
+
+eval_config = RunEvalConfig(
+    evaluators=[
+        # You can specify an evaluator by name/enum.
+        # In this case, the default criterion is "helpfulness"
+        "criteria",
+        # Or you can configure the evaluator
+        RunEvalConfig.Criteria("harmfulness"),
+        RunEvalConfig.Criteria("misogyny"),
+        RunEvalConfig.Criteria(
+            {
+                "cliche": "Are the lyrics cliche? "
+                "Respond Y if they are, N if they're entirely unique."
+            }
+        ),
+    ]
+)
+
+run_on_dataset(
+    client=client,
+    dataset_name=dataset_name,
+    llm_or_chain_factory=llm,
+    evaluation=eval_config,
+)
 
 # # --------------------------------------------------------------
 # # Different Ways of Creating Datasets in LangSmith
