@@ -2,6 +2,9 @@
 # Import Modules
 # --------------------------------------------------------------
 
+# Attention: evaluation can quickly become expensive
+# due to heavy token usage.
+
 import os
 import nest_asyncio
 import pandas as pd
@@ -51,7 +54,7 @@ llm = ChatOpenAI()
 #     "a rap battle between Aubrey Plaza and Stephen Colbert",
 # ]
 
-dataset_name = "Rap Battle Dataset"
+# dataset_name = "Rap Battle Dataset"
 
 # Run once
 # # Storing inputs in a dataset lets us
@@ -94,36 +97,36 @@ class BaseCache(BaseModel):
 
 RunEvalConfig.Criteria.model_rebuild()
 
-eval_config = RunEvalConfig(
-    evaluators=[
-        # You can specify an evaluator by name/enum.
-        # In this case, the default criterion is "helpfulness"
-        "criteria",
-        # Or you can configure the evaluator
-        RunEvalConfig.Criteria("harmfulness"),
-        RunEvalConfig.Criteria("misogyny"),
-        RunEvalConfig.Criteria(
-            {
-                "cliche": "Are the lyrics cliche? "
-                "Respond Y if they are, N if they're entirely unique."
-            }
-        ),
-    ]
-)
+# eval_config = RunEvalConfig(
+#     evaluators=[
+#         # You can specify an evaluator by name/enum.
+#         # In this case, the default criterion is "helpfulness"
+#         "criteria",
+#         # Or you can configure the evaluator
+#         RunEvalConfig.Criteria("harmfulness"),
+#         RunEvalConfig.Criteria("misogyny"),
+#         RunEvalConfig.Criteria(
+#             {
+#                 "cliche": "Are the lyrics cliche? "
+#                 "Respond Y if they are, N if they're entirely unique."
+#             }
+#         ),
+#     ]
+# )
 
-run_on_dataset(
-    client=client,
-    dataset_name=dataset_name,
-    llm_or_chain_factory=llm,
-    evaluation=eval_config,
-)
+# run_on_dataset(
+#     client=client,
+#     dataset_name=dataset_name,
+#     llm_or_chain_factory=llm,
+#     evaluation=eval_config,
+# )
 
 # # --------------------------------------------------------------
 # # Different Ways of Creating Datasets in LangSmith
 # # 1. Create a Dataset From a List of Examples (Key-Value Pairs)
 # # --------------------------------------------------------------
 
-# example_inputs = [
+# example_inputs_animals = [
 #     ("What is the largest mammal?", "The blue whale"),
 #     ("What do mammals and birds have in common?", "They are both warm-blooded"),
 #     ("What are reptiles known for?", "Having scales"),
@@ -133,31 +136,31 @@ run_on_dataset(
 #     ),
 # ]
 
-# dataset_name = "Elementary Animal Questions"
+# dataset_name_animals = "Elementary Animal Questions"
 
-# dataset = client.create_dataset(
-#     dataset_name=dataset_name,
+# dataset_animals = client.create_dataset(
+#     dataset_name=dataset_name_animals,
 #     description="Questions and answers about animal phylogenetics.",
 # )
 
-# for input_prompt, output_answer in example_inputs:
+# for input_prompt, output_answer in example_inputs_animals:
 #     client.create_example(
 #         inputs={"question": input_prompt},
 #         outputs={"answer": output_answer},
-#         dataset_id=dataset.id,
+#         dataset_id=dataset_animals.id,
 #     )
 
 # # --------------------------------------------------------------
 # # 2. Create a Dataset From Existing Runs
 # # --------------------------------------------------------------
 
-# dataset_name = "Example Dataset"
+# dataset_name_example = "Example Dataset"
 
-# dataset = client.create_dataset(dataset_name, description="An example dataset")
+# dataset = client.create_dataset(dataset_name_example, description="An example dataset")
 
 # # Filter runs to add to the dataset
 # runs = client.list_runs(
-#     project_name="langsmith-tutorial",
+#     project_name= os.getenv("LANGCHAIN_PROJECT"),
 #     execution_order=1,
 #     error=False,
 # )
@@ -174,7 +177,7 @@ run_on_dataset(
 # # --------------------------------------------------------------
 
 # # Create a Dataframe
-# example_inputs = [
+# example_inputs_df = [
 #     ("What is the largest mammal?", "The blue whale"),
 #     ("What do mammals and birds have in common?", "They are both warm-blooded"),
 #     ("What are reptiles known for?", "Having scales"),
@@ -184,14 +187,14 @@ run_on_dataset(
 #     ),
 # ]
 
-# df_dataset = pd.DataFrame(example_inputs, columns=["Question", "Answer"])
+# df_dataset = pd.DataFrame(example_inputs_df, columns=["Question", "Answer"])
 # df_dataset.head()
 
 # input_keys = ["Question"]
 # output_keys = ["Answer"]
 
 # # Create Dataset
-# dataset = client.upload_dataframe(
+# dataset_df = client.upload_dataframe(
 #     df=df_dataset,
 #     input_keys=input_keys,
 #     output_keys=output_keys,
@@ -204,11 +207,11 @@ run_on_dataset(
 # # 4. Create a Dataset From a CSV File
 # # --------------------------------------------------------------
 
-# # Save the Dataframe as a CSV File
+# Save the Dataframe as a CSV File
 # csv_path = "../data/dataset.csv"
 # df_dataset.to_csv(csv_path, index=False)
 
-# # Create Dataset
+# Create Dataset
 # dataset = client.upload_csv(
 #     csv_file=csv_path,
 #     input_keys=input_keys,
@@ -223,20 +226,20 @@ run_on_dataset(
 # # 1. Evaluate Datasets That Contain Labels
 # # --------------------------------------------------------------
 
-# evaluation_config = RunEvalConfig(
-#     evaluators=[
-#         "qa",  # correctness: right or wrong
-#         "context_qa",  # refer to example outputs
-#         "cot_qa",  # context_qa + reasoning
-#     ]
-# )
+evaluation_config_qa = RunEvalConfig(
+    evaluators=[
+        "qa",  # correctness: right or wrong
+        "context_qa",  # refer to example outputs
+        "cot_qa",  # context_qa + reasoning
+    ]
+)
 
-# run_on_dataset(
-#     client=client,
-#     dataset_name="Elementary Animal Questions",
-#     llm_or_chain_factory=llm,
-#     evaluation=evaluation_config,
-# )
+run_on_dataset(
+    client=client,
+    dataset_name="Elementary Animal Questions",
+    llm_or_chain_factory=llm,
+    evaluation=evaluation_config_qa,
+)
 
 # # --------------------------------------------------------------
 # # 2. Evaluate Datasets With Customized Criterias
@@ -290,40 +293,40 @@ run_on_dataset(
 # # Cosine Distance: Ranged Between 0 to 1. 0 = More Similar
 # # --------------------------------------------------------------
 
-# evaluation_config = RunEvalConfig(
-#     evaluators=[
-#         # You can define an arbitrary criterion as a key: value pair in the criteria dict
-#         "embedding_distance",
-#         # Or to customize the embeddings:
-#         # Requires 'pip install sentence_transformers'
-#         # RunEvalConfig.EmbeddingDistance(embeddings=HuggingFaceEmbeddings(), distance_metric="cosine"),
-#     ]
-# )
+evaluation_config_cos_distance = RunEvalConfig(
+    evaluators=[
+        # You can define an arbitrary criterion as a key: value pair in the criteria dict
+        "embedding_distance",
+        # Or to customize the embeddings:
+        # Requires 'pip install sentence_transformers'
+        # RunEvalConfig.EmbeddingDistance(embeddings=HuggingFaceEmbeddings(), distance_metric="cosine"),
+    ]
+)
 
-# run_on_dataset(
-#     client=client,
-#     dataset_name="Elementary Animal Questions",
-#     llm_or_chain_factory=llm,
-#     evaluation=evaluation_config,
-# )
+run_on_dataset(
+    client=client,
+    dataset_name="Elementary Animal Questions",
+    llm_or_chain_factory=llm,
+    evaluation=evaluation_config_cos_distance,
+)
 
 # # --------------------------------------------------------------
 # # 5. Evaluate Datasets Based on String Distance Criteria
 # # Jaro-Winkler Similarity Distance: 0 = Exact Match, 1 = No Similarity
 # # --------------------------------------------------------------
 
-# evaluation_config = RunEvalConfig(
-#     evaluators=[
-#         # You can define an arbitrary criterion as a key: value pair in the criteria dict
-#         "string_distance",
-#         # Or to customize the distance metric:
-#         # RunEvalConfig.StringDistance(distance="levenshtein", normalize_score=True),
-#     ]
-# )
+evaluation_config_str_distance = RunEvalConfig(
+    evaluators=[
+        # You can define an arbitrary criterion as a key: value pair in the criteria dict
+        "string_distance",
+        # Or to customize the distance metric:
+        # RunEvalConfig.StringDistance(distance="levenshtein", normalize_score=True),
+    ]
+)
 
-# run_on_dataset(
-#     client=client,
-#     dataset_name="Elementary Animal Questions",
-#     llm_or_chain_factory=llm,
-#     evaluation=evaluation_config,
-# )
+run_on_dataset(
+    client=client,
+    dataset_name="Elementary Animal Questions",
+    llm_or_chain_factory=llm,
+    evaluation=evaluation_config_str_distance,
+)
